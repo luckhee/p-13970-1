@@ -39,6 +39,7 @@ public class ApiV1PostCommentController {
 
         return new PostCommentDto(postComment);
     }
+
     @DeleteMapping("/{id}")
     @Transactional
     public RsData<Void> delete(@PathVariable int id , @PathVariable int postId) {
@@ -52,5 +53,26 @@ public class ApiV1PostCommentController {
 
         return new RsData<>("200-1", "댓글이 삭제되었습니다.");
     }
+
+    record PostCommentModifyReqBody(
+            String content
+    ) {
+    }
+
+    @PutMapping("/{id}")
+    @Transactional
+    public RsData<Void> modify(@PathVariable int id , @PathVariable int postId, @RequestBody PostCommentModifyReqBody reqBody) {
+        Post post = postService.findById(postId).get();
+
+
+
+        PostComment postComment = post.findCommentById(id).get();
+
+        postService.modifyComment(postComment, reqBody.content);
+
+        return new RsData<>("200-1", "댓글이 수정되었습니다.");
+    }
+
+
 
 }
