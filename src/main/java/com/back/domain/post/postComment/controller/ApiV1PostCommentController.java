@@ -70,7 +70,7 @@ public class ApiV1PostCommentController {
 
         postService.modifyComment(postComment, reqBody.content);
 
-        return new RsData<>("200-1", "댓글이 수정되었습니다.");
+        return new RsData<>("200-1", "%d번 댓글이 수정되었습니다.".formatted(id));
     }
 
 
