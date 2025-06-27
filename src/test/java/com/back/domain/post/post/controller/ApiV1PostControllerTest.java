@@ -1,6 +1,9 @@
 package com.back.domain.post.post.controller;
 
 
+import com.back.domain.post.post.entity.Post;
+import com.back.domain.post.post.service.PostService;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.handler;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -26,6 +28,8 @@ public class ApiV1PostControllerTest {
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private PostService postService;
 
 
     @Test
@@ -43,10 +47,21 @@ public class ApiV1PostControllerTest {
         )
                 .andDo(print());
 
+        Post post = postService.findLatest().get();
+
+
         resultActions.
                 andExpect(handler().handlerType(ApiV1PostController.class)).
                 andExpect(handler().methodName("write")).
-                andExpect(status().isCreated());
+                andExpect(status().isOk()).
+                andExpect(jsonPath("$.resultCode").value("200-1")).
+                andExpect(jsonPath("$.msg").value("%d번 글이 생성되었습니다.".formatted(post.getId()))).
+                andExpect(jsonPath("$.data.id").value(post.getId())).
+                andExpect(jsonPath("$.data.title").value("테스트 글 제목")).
+                andExpect(jsonPath("$.data.content").value("테스트 글 내용")).
+                andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(post.getCreateDate().toString().substring(0, 20)))).
+                andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(post.getModifyDate().toString().substring(0, 20))));
+
     }
 
     @Test
@@ -66,7 +81,16 @@ public class ApiV1PostControllerTest {
                 )
                 .andDo(print()); // 응답결과를 출력합니다.
 
-        resultActions
-                .andExpect(status().isOk());
+
+        Post post = postService.findById(1).get();
+
+        resultActions.
+                andExpect(status().isOk()).
+                andExpect(handler().handlerType(ApiV1PostController.class)).
+                andExpect(handler().methodName("modify")).
+                andExpect(status().isOk()).
+                andExpect(jsonPath("$.resultCode").value("200-1")).
+                andExpect(jsonPath("$.msg").value("%d번 글이 수정되었습니다.".formatted(post.getId())));
+
     }
 }
