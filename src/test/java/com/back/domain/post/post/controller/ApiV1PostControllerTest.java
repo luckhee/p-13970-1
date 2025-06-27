@@ -15,8 +15,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -56,11 +57,11 @@ public class ApiV1PostControllerTest {
                 andExpect(status().isOk()).
                 andExpect(jsonPath("$.resultCode").value("200-1")).
                 andExpect(jsonPath("$.msg").value("%d번 글이 생성되었습니다.".formatted(post.getId()))).
-                andExpect(jsonPath("$.data.id").value(post.getId())).
-                andExpect(jsonPath("$.data.title").value("테스트 글 제목")).
-                andExpect(jsonPath("$.data.content").value("테스트 글 내용")).
-                andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(post.getCreateDate().toString().substring(0, 20)))).
-                andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(post.getModifyDate().toString().substring(0, 20))));
+                andExpect(jsonPath("$.data.post.id").value(post.getId())).
+                andExpect(jsonPath("$.data.post.title").value("테스트 글 제목")).
+                andExpect(jsonPath("$.data.post.content").value("테스트 글 내용")).
+                andExpect(jsonPath("$.data.post.createDate").value(Matchers.startsWith(post.getCreateDate().toString().substring(0, 20)))).
+                andExpect(jsonPath("$.data.post.modifyDate").value(Matchers.startsWith(post.getModifyDate().toString().substring(0, 20))));
 
     }
 
@@ -91,6 +92,80 @@ public class ApiV1PostControllerTest {
                 andExpect(status().isOk()).
                 andExpect(jsonPath("$.resultCode").value("200-1")).
                 andExpect(jsonPath("$.msg").value("%d번 글이 수정되었습니다.".formatted(post.getId())));
+
+    }
+
+    @Test
+    @DisplayName("글 삭제")
+    void t3() throws Exception {
+        // 회원가입 요청을 보냅니다.
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/posts/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+
+                )
+                .andDo(print()); // 응답결과를 출력합니다.
+
+
+        resultActions.
+                andExpect(status().isOk()).
+                andExpect(handler().handlerType(ApiV1PostController.class)).
+                andExpect(handler().methodName("delete")).
+                andExpect(jsonPath("$.resultCode").value("200-1")).
+                andExpect(jsonPath("$.msg").value("1번 글이 삭제되었습니다."));
+    }
+
+    @Test
+    @DisplayName("글 다건조회")
+    void t4() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/posts")
+                )
+                .andDo(print());
+
+        List<Post> posts = postService.findAll();
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("getItems"))
+                .andExpect(status().isOk());
+
+        for (int i = 0; i < posts.size(); i++) {
+            Post post = posts.get(i);
+            resultActions
+                    .andExpect(jsonPath("$[%d].id".formatted(i)).value(post.getId()))
+                    .andExpect(jsonPath("$[%d].createDate".formatted(i)).value(Matchers.startsWith(post.getCreateDate().toString().substring(0, 20))))
+                    .andExpect(jsonPath("$[%d].modifyDate".formatted(i)).value(Matchers.startsWith(post.getModifyDate().toString().substring(0, 20))))
+                    .andExpect(jsonPath("$[%d].title".formatted(i)).value(post.getTitle()))
+                    .andExpect(jsonPath("$[%d].content".formatted(i)).value(post.getContent()));
+        }
+    }
+
+    @Test
+    @DisplayName("글 단건조회")
+    void t5() throws Exception {
+        // 회원가입 요청을 보냅니다.
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/posts/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+
+                )
+                .andDo(print()); // 응답결과를 출력합니다.
+
+        Post post = postService.findById(1).get();
+
+        resultActions.
+                andExpect(status().isOk()).
+                andExpect(handler().handlerType(ApiV1PostController.class)).
+                andExpect(handler().methodName("getItem")).
+                andExpect(jsonPath("$.id").isNumber()).
+                andExpect(jsonPath("$.title").isString()).
+                andExpect(jsonPath("$.content").isString()).
+                andExpect(jsonPath("$.createDate").value(Matchers.startsWith(post.getCreateDate().toString().substring(0, 20)))).
+                andExpect(jsonPath("$.modifyDate").value(Matchers.startsWith(post.getModifyDate().toString().substring(0, 20))));
 
     }
 }
